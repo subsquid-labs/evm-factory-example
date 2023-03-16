@@ -1,22 +1,20 @@
 import {
-    assertNotNull,
     BatchHandlerContext,
     BatchProcessorItem,
     EvmBatchProcessor,
     EvmBlock,
 } from '@subsquid/evm-processor'
 import {LogItem} from '@subsquid/evm-processor/lib/interfaces/dataSelection'
-import {Store, Database} from '@subsquid/bigquery-store'
+import {
+    Store,
+    Database,
+    LocalDest
+} from '@subsquid/file-store'
 import {lookupArchive} from '@subsquid/archive-registry'
-import assert from 'assert'
 
-import {bigQuery} from './big-query'
 import {Pools, Swaps} from './tables'
 import * as factoryAbi from './abi/factory'
 import * as pairAbi from './abi/pair'
-
-assert(process.env.GOOGLE_DATASET_ID, 'GOOGLE_DATASET_ID must be set')
-assert(process.env.GOOGLE_DATASET_LOCATION, 'GOOGLE_DATASET_LOCATION must be set')
 
 export const FACTORY_ADDRESS = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'.toLowerCase()
 
@@ -52,18 +50,14 @@ let processor = new EvmBatchProcessor()
 let tables = { Pools, Swaps }
 let db = new Database({
     tables: tables,
-    bq: bigQuery,
-    dataset: process.env.GOOGLE_DATASET_ID
+    dest: new LocalDest('/mirrorstorage/pancakes'),
+    chunkSizeMb: 10
 })
 type Item = BatchProcessorItem<typeof processor>
 type Ctx = BatchHandlerContext<Store<typeof tables>, Item>
 
 processor.run(db, async (ctx) => {
-    if (!factoryPools) {
-        factoryPools = await getPools()
-        ctx.log.info('Retrieved the set of pools from the BQ dataset:')
-        // ctx.log.info(factoryPools)
-    }
+    if (!factoryPools) factoryPools = new Set()
 
     let poolCreationsData: PoolCreationData[] = []
     let swapsData: SwapData[] = []
@@ -86,24 +80,15 @@ processor.run(db, async (ctx) => {
 
 let factoryPools: Set<string>
 
-async function getPools() {
-    let [job] = await bigQuery.createQueryJob({
-        query: `SELECT address FROM \`${process.env.GOOGLE_DATASET_ID}.pools\``,
-        location: process.env.GOOGLE_DATASET_LOCATION
-    })
-    let [rows] = await job.getQueryResults()
-    return new Set(rows.map(r => r.address))
-}
-
 function savePools(ctx: Ctx, poolsData: PoolCreationData[]) {
     for (let p of poolsData) {
-        ctx.store.Pools.insert(p)
+        ctx.store.Pools.write(p)
         factoryPools.add(p.address)
     }
 }
 
 function saveSwaps(ctx: Ctx, swapsData: SwapData[]) {
-    ctx.store.Swaps.insertMany(swapsData)
+    ctx.store.Swaps.writeMany(swapsData)
 }
 
 interface PoolCreationData {
@@ -123,7 +108,7 @@ function handlePoolCreation(ctx: Ctx, item: LogItem<{evmLog: {topics: true; data
 
 interface SwapData {
     txHash: string
-    blockNumber: number
+    blockNumber: bigint
     timestamp: Date
     pool: string
     sender: string
@@ -142,7 +127,7 @@ function handleSwap(
     let event = pairAbi.events.Swap.decode(item.evmLog)
     return {
         txHash: item.transaction.hash,
-        blockNumber: block.height,
+        blockNumber: BigInt(block.height),
         timestamp: new Date(block.timestamp),
         pool: item.evmLog.address,
         sender: event.sender.toLowerCase(),
