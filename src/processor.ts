@@ -6,14 +6,17 @@ import {
     EvmBlock,
 } from '@subsquid/evm-processor'
 import {LogItem} from '@subsquid/evm-processor/lib/interfaces/dataSelection'
-import {Store, TypeormDatabase} from '@subsquid/typeorm-store'
-import { lookupArchive } from '@subsquid/archive-registry'
-import {In} from 'typeorm'
-import {Pool, Swap} from './model'
+import {Store, Database} from '@subsquid/bigquery-store'
+import {lookupArchive} from '@subsquid/archive-registry'
+import assert from 'assert'
 
+import {bigQuery} from './big-query'
+import {Pools, Swaps} from './tables'
 import * as factoryAbi from './abi/factory'
 import * as poolAbi from './abi/pool'
 
+assert(process.env.GOOGLE_DATASET_ID, 'GOOGLE_DATASET_ID must be set')
+assert(process.env.GOOGLE_DATASET_LOCATION, 'GOOGLE_DATASET_LOCATION must be set')
 
 export const FACTORY_ADDRESS = '0x1f98431c8ad98523631ae4a59f267346ea31f984'
 
@@ -46,11 +49,21 @@ let processor = new EvmBatchProcessor()
         } as const,
     })
 
+let tables = { Pools, Swaps }
+let db = new Database({
+    tables: tables,
+    bq: bigQuery,
+    dataset: process.env.GOOGLE_DATASET_ID
+})
 type Item = BatchProcessorItem<typeof processor>
-type Ctx = BatchHandlerContext<Store, Item>
+type Ctx = BatchHandlerContext<Store<typeof tables>, Item>
 
-processor.run(new TypeormDatabase(), async (ctx) => {
-    if (!factoryPools) factoryPools = await ctx.store.findBy(Pool, {}).then((q) => new Set(q.map((i) => i.id)))
+processor.run(db, async (ctx) => {
+    if (!factoryPools) {
+        factoryPools = await getPools()
+        ctx.log.info('Retrieved the set of pools from the BQ dataset:')
+        // ctx.log.info(factoryPools)
+    }
 
     let poolCreationsData: PoolCreationData[] = []
     let swapsData: SwapData[] = []
@@ -67,58 +80,34 @@ processor.run(new TypeormDatabase(), async (ctx) => {
         }
     }
 
-    await savePools(ctx, poolCreationsData)
-    await saveSwaps(ctx, swapsData)
+    savePools(ctx, poolCreationsData)
+    saveSwaps(ctx, swapsData)
 })
 
 let factoryPools: Set<string>
 
-async function savePools(ctx: Ctx, poolsData: PoolCreationData[]) {
-    let pools: Pool[] = []
-
-    for (let p of poolsData) {
-        let pool = new Pool(p)
-        pools.push(pool)
-        factoryPools.add(pool.id)
-    }
-
-    await ctx.store.insert(pools)
+async function getPools() {
+    let [job] = await bigQuery.createQueryJob({
+        query: `SELECT address FROM \`${process.env.GOOGLE_DATASET_ID}.pools\``,
+        location: process.env.GOOGLE_DATASET_LOCATION
+    })
+    let [rows] = await job.getQueryResults()
+    return new Set(rows.map(r => r.address))
 }
 
-async function saveSwaps(ctx: Ctx, swapsData: SwapData[]) {
-    let poolIds = new Set<string>()
-    for (let t of swapsData) {
-        poolIds.add(t.pool)
+function savePools(ctx: Ctx, poolsData: PoolCreationData[]) {
+    for (let p of poolsData) {
+        ctx.store.Pools.insert(p)
+        factoryPools.add(p.address)
     }
+}
 
-    let pools = await ctx.store.findBy(Pool, {id: In([...poolIds])}).then((q) => new Map(q.map((i) => [i.id, i])))
-
-    let swaps: Swap[] = []
-
-    for (let s of swapsData) {
-        let {id, blockNumber, timestamp, txHash, amount0, amount1, sender, recipient} = s
-
-        let pool = assertNotNull(pools.get(s.pool))
-
-        swaps.push(
-            new Swap({
-                id,
-                blockNumber,
-                timestamp,
-                txHash,
-                amount0,
-                amount1,
-                sender,
-                recipient,
-            })
-        )
-    }
-
-    await ctx.store.insert(swaps)
+function saveSwaps(ctx: Ctx, swapsData: SwapData[]) {
+    ctx.store.Swaps.insertMany(swapsData)
 }
 
 interface PoolCreationData {
-    id: string
+    address: string
     token0: string
     token1: string
 }
@@ -126,22 +115,21 @@ interface PoolCreationData {
 function handlePoolCreation(ctx: Ctx, item: LogItem<{evmLog: {topics: true; data: true}}>): PoolCreationData {
     let event = factoryAbi.events.PoolCreated.decode(item.evmLog)
     return {
-        id: event.pool.toLowerCase(),
+        address: event.pool.toLowerCase(),
         token0: event.token0.toLowerCase(),
         token1: event.token1.toLowerCase(),
     }
 }
 
 interface SwapData {
-    id: string
-    pool: string
+    txHash: string
     blockNumber: number
     timestamp: Date
-    txHash: string
+    pool: string
+    sender: string
+    recipient: string
     amount0: bigint
     amount1: bigint
-    recipient: string
-    sender: string
 }
 
 function handleSwap(
@@ -151,14 +139,13 @@ function handleSwap(
 ): SwapData {
     let event = poolAbi.events.Swap.decode(item.evmLog)
     return {
-        id: item.evmLog.id,
-        pool: item.evmLog.address,
+        txHash: item.transaction.hash,
         blockNumber: block.height,
         timestamp: new Date(block.timestamp),
-        txHash: item.transaction.hash,
+        pool: item.evmLog.address,
+        sender: event.sender.toLowerCase(),
+        recipient: event.recipient.toLowerCase(),
         amount0: event.amount0.toBigInt(),
         amount1: event.amount1.toBigInt(),
-        recipient: event.recipient.toLowerCase(),
-        sender: event.sender.toLowerCase(),
     }
 }
