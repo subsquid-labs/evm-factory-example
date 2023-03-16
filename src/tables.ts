@@ -1,28 +1,24 @@
 import {
     Table,
     Column,
-    StringType,
-    TimestampType,
-    NumericType,
-    Int64,
-    ArrayType
+    Types
 } from '@subsquid/bigquery-store'
 
 export const Pools = new Table('pools', {
-    address: Column(StringType()),
-    token0: Column(StringType()),
-    token1: Column(StringType())
+    address: Column(Types.String()),
+    token0: Column(Types.String()),
+    token1: Column(Types.String())
 })
 
 export const Swaps = new Table('swaps', {
-    txHash: Column(StringType()),
-    blockNumber: Column(Int64()),
-    timestamp: Column(TimestampType()),
-    pool: Column(StringType()),
-    sender: Column(StringType()),
-    amount0In: Column(NumericType()),
-    amount1In: Column(NumericType()),
-    amount0Out: Column(NumericType()),
-    amount1Out: Column(NumericType()),
-    to: Column(StringType())
+    txHash: Column(Types.String()),
+    blockNumber: Column(Types.Int64()),
+    timestamp: Column(Types.Timestamp()),
+    pool: Column(Types.String()),
+    sender: Column(Types.String()),
+    amount0In: Column(Types.BigNumeric(38)),
+    amount1In: Column(Types.BigNumeric(38)),
+    amount0Out: Column(Types.BigNumeric(38)),
+    amount1Out: Column(Types.BigNumeric(38)),
+    to: Column(Types.String())
 })

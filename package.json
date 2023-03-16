@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@subsquid/archive-registry": "^2.1.8",
-    "@subsquid/bigquery-store": "^0.0.0",
+    "@subsquid/bigquery-store": "^0.1.0",
     "@subsquid/evm-processor": "^0.3.3",
     "@subsquid/evm-typegen": "^2.1.1",
     "dotenv": "^16.0.3",
