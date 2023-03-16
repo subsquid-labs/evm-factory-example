@@ -13,22 +13,22 @@ import assert from 'assert'
 import {bigQuery} from './big-query'
 import {Pools, Swaps} from './tables'
 import * as factoryAbi from './abi/factory'
-import * as poolAbi from './abi/pool'
+import * as pairAbi from './abi/pair'
 
 assert(process.env.GOOGLE_DATASET_ID, 'GOOGLE_DATASET_ID must be set')
 assert(process.env.GOOGLE_DATASET_LOCATION, 'GOOGLE_DATASET_LOCATION must be set')
 
-export const FACTORY_ADDRESS = '0x1f98431c8ad98523631ae4a59f267346ea31f984'
+export const FACTORY_ADDRESS = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'.toLowerCase()
 
 let processor = new EvmBatchProcessor()
     .setDataSource({
-        archive: lookupArchive('eth-mainnet'),
+        archive: lookupArchive('binance'),
     })
     .setBlockRange({
-        from: 12_369_621,
+        from: 6_809_737,
     })
     .addLog(FACTORY_ADDRESS, {
-        filter: [[factoryAbi.events.PoolCreated.topic]],
+        filter: [[factoryAbi.events.PairCreated.topic]],
         data: {
             evmLog: {
                 topics: true,
@@ -37,7 +37,7 @@ let processor = new EvmBatchProcessor()
         } as const,
     })
     .addLog([], {
-        filter: [[poolAbi.events.Swap.topic]],
+        filter: [[pairAbi.events.Swap.topic]],
         data: {
             evmLog: {
                 topics: true,
@@ -113,11 +113,11 @@ interface PoolCreationData {
 }
 
 function handlePoolCreation(ctx: Ctx, item: LogItem<{evmLog: {topics: true; data: true}}>): PoolCreationData {
-    let event = factoryAbi.events.PoolCreated.decode(item.evmLog)
+    let event = factoryAbi.events.PairCreated.decode(item.evmLog)
     return {
-        address: event.pool.toLowerCase(),
+        address: event.pair.toLowerCase(),
         token0: event.token0.toLowerCase(),
-        token1: event.token1.toLowerCase(),
+        token1: event.token1.toLowerCase()
     }
 }
 
@@ -127,9 +127,11 @@ interface SwapData {
     timestamp: Date
     pool: string
     sender: string
-    recipient: string
-    amount0: bigint
-    amount1: bigint
+    amount0In: bigint
+    amount1In: bigint
+    amount0Out: bigint
+    amount1Out: bigint
+    to: string
 }
 
 function handleSwap(
@@ -137,15 +139,17 @@ function handleSwap(
     block: EvmBlock,
     item: LogItem<{evmLog: {topics: true; data: true}; transaction: {hash: true}}>
 ): SwapData {
-    let event = poolAbi.events.Swap.decode(item.evmLog)
+    let event = pairAbi.events.Swap.decode(item.evmLog)
     return {
         txHash: item.transaction.hash,
         blockNumber: block.height,
         timestamp: new Date(block.timestamp),
         pool: item.evmLog.address,
         sender: event.sender.toLowerCase(),
-        recipient: event.recipient.toLowerCase(),
-        amount0: event.amount0.toBigInt(),
-        amount1: event.amount1.toBigInt(),
+        amount0In: event.amount0In.toBigInt(),
+        amount1In: event.amount1In.toBigInt(),
+        amount0Out: event.amount0Out.toBigInt(),
+        amount1Out: event.amount1Out.toBigInt(),
+        to: event.to.toLowerCase()
     }
 }

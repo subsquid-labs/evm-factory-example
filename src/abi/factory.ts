@@ -5,49 +5,64 @@ import {ABI_JSON} from './factory.abi'
 export const abi = new ethers.utils.Interface(ABI_JSON);
 
 export const events = {
-    FeeAmountEnabled: new LogEvent<([fee: number, tickSpacing: number] & {fee: number, tickSpacing: number})>(
-        abi, '0xc66a3fdf07232cdd185febcc6579d408c241b47ae2f9907d84be655141eeaecc'
-    ),
-    OwnerChanged: new LogEvent<([oldOwner: string, newOwner: string] & {oldOwner: string, newOwner: string})>(
-        abi, '0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c'
-    ),
-    PoolCreated: new LogEvent<([token0: string, token1: string, fee: number, tickSpacing: number, pool: string] & {token0: string, token1: string, fee: number, tickSpacing: number, pool: string})>(
-        abi, '0x783cca1c0412dd0d695e784568c96da2e9c22ff989357a2e8b1d9b2b4e6b7118'
+    PairCreated: new LogEvent<([token0: string, token1: string, pair: string, _: ethers.BigNumber] & {token0: string, token1: string, pair: string})>(
+        abi, '0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9'
     ),
 }
 
 export const functions = {
-    createPool: new Func<[tokenA: string, tokenB: string, fee: number], {tokenA: string, tokenB: string, fee: number}, string>(
-        abi, '0xa1671295'
+    INIT_CODE_PAIR_HASH: new Func<[], {}, string>(
+        abi, '0x5855a25a'
     ),
-    enableFeeAmount: new Func<[fee: number, tickSpacing: number], {fee: number, tickSpacing: number}, []>(
-        abi, '0x8a7c195f'
+    allPairs: new Func<[_: ethers.BigNumber], {}, string>(
+        abi, '0x1e3dd18b'
     ),
-    feeAmountTickSpacing: new Func<[fee: number], {fee: number}, number>(
-        abi, '0x22afcccb'
+    allPairsLength: new Func<[], {}, ethers.BigNumber>(
+        abi, '0x574f2ba3'
     ),
-    getPool: new Func<[tokenA: string, tokenB: string, fee: number], {tokenA: string, tokenB: string, fee: number}, string>(
-        abi, '0x1698ee82'
+    createPair: new Func<[tokenA: string, tokenB: string], {tokenA: string, tokenB: string}, string>(
+        abi, '0xc9c65396'
     ),
-    owner: new Func<[], {}, string>(
-        abi, '0x8da5cb5b'
+    feeTo: new Func<[], {}, string>(
+        abi, '0x017e7e58'
     ),
-    setOwner: new Func<[_owner: string], {_owner: string}, []>(
-        abi, '0x13af4035'
+    feeToSetter: new Func<[], {}, string>(
+        abi, '0x094b7415'
+    ),
+    getPair: new Func<[_: string, _: string], {}, string>(
+        abi, '0xe6a43905'
+    ),
+    setFeeTo: new Func<[_feeTo: string], {_feeTo: string}, []>(
+        abi, '0xf46901ed'
+    ),
+    setFeeToSetter: new Func<[_feeToSetter: string], {_feeToSetter: string}, []>(
+        abi, '0xa2e74af6'
     ),
 }
 
 export class Contract extends ContractBase {
 
-    feeAmountTickSpacing(fee: number): Promise<number> {
-        return this.eth_call(functions.feeAmountTickSpacing, [fee])
+    INIT_CODE_PAIR_HASH(): Promise<string> {
+        return this.eth_call(functions.INIT_CODE_PAIR_HASH, [])
     }
 
-    getPool(tokenA: string, tokenB: string, fee: number): Promise<string> {
-        return this.eth_call(functions.getPool, [tokenA, tokenB, fee])
+    allPairs(arg0: ethers.BigNumber): Promise<string> {
+        return this.eth_call(functions.allPairs, [arg0])
     }
 
-    owner(): Promise<string> {
-        return this.eth_call(functions.owner, [])
+    allPairsLength(): Promise<ethers.BigNumber> {
+        return this.eth_call(functions.allPairsLength, [])
+    }
+
+    feeTo(): Promise<string> {
+        return this.eth_call(functions.feeTo, [])
+    }
+
+    feeToSetter(): Promise<string> {
+        return this.eth_call(functions.feeToSetter, [])
+    }
+
+    getPair(arg0: string, arg1: string): Promise<string> {
+        return this.eth_call(functions.getPair, [arg0, arg1])
     }
 }

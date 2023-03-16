@@ -20,7 +20,9 @@ export const Swaps = new Table('swaps', {
     timestamp: Column(TimestampType()),
     pool: Column(StringType()),
     sender: Column(StringType()),
-    recipient: Column(StringType()),
-    amount0: Column(NumericType()),
-    amount1: Column(NumericType())
+    amount0In: Column(NumericType()),
+    amount1In: Column(NumericType()),
+    amount0Out: Column(NumericType()),
+    amount1Out: Column(NumericType()),
+    to: Column(StringType())
 })

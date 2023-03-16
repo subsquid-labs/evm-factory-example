@@ -1,42 +1,18 @@
 export const ABI_JSON = [
     {
-        "type": "event",
-        "anonymous": false,
-        "name": "FeeAmountEnabled",
+        "type": "constructor",
+        "payable": false,
         "inputs": [
             {
-                "type": "uint24",
-                "name": "fee",
-                "indexed": true
-            },
-            {
-                "type": "int24",
-                "name": "tickSpacing",
-                "indexed": true
+                "type": "address",
+                "name": "_feeToSetter"
             }
         ]
     },
     {
         "type": "event",
         "anonymous": false,
-        "name": "OwnerChanged",
-        "inputs": [
-            {
-                "type": "address",
-                "name": "oldOwner",
-                "indexed": true
-            },
-            {
-                "type": "address",
-                "name": "newOwner",
-                "indexed": true
-            }
-        ]
-    },
-    {
-        "type": "event",
-        "anonymous": false,
-        "name": "PoolCreated",
+        "name": "PairCreated",
         "inputs": [
             {
                 "type": "address",
@@ -49,25 +25,62 @@ export const ABI_JSON = [
                 "indexed": true
             },
             {
-                "type": "uint24",
-                "name": "fee",
-                "indexed": true
-            },
-            {
-                "type": "int24",
-                "name": "tickSpacing",
+                "type": "address",
+                "name": "pair",
                 "indexed": false
             },
             {
-                "type": "address",
-                "name": "pool",
+                "type": "uint256",
                 "indexed": false
             }
         ]
     },
     {
         "type": "function",
-        "name": "createPool",
+        "name": "INIT_CODE_PAIR_HASH",
+        "constant": true,
+        "stateMutability": "view",
+        "payable": false,
+        "inputs": [],
+        "outputs": [
+            {
+                "type": "bytes32"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "name": "allPairs",
+        "constant": true,
+        "stateMutability": "view",
+        "payable": false,
+        "inputs": [
+            {
+                "type": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "type": "address"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "name": "allPairsLength",
+        "constant": true,
+        "stateMutability": "view",
+        "payable": false,
+        "inputs": [],
+        "outputs": [
+            {
+                "type": "uint256"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "name": "createPair",
         "constant": false,
         "payable": false,
         "inputs": [
@@ -78,84 +91,18 @@ export const ABI_JSON = [
             {
                 "type": "address",
                 "name": "tokenB"
-            },
-            {
-                "type": "uint24",
-                "name": "fee"
             }
         ],
         "outputs": [
             {
                 "type": "address",
-                "name": "pool"
+                "name": "pair"
             }
         ]
     },
     {
         "type": "function",
-        "name": "enableFeeAmount",
-        "constant": false,
-        "payable": false,
-        "inputs": [
-            {
-                "type": "uint24",
-                "name": "fee"
-            },
-            {
-                "type": "int24",
-                "name": "tickSpacing"
-            }
-        ],
-        "outputs": []
-    },
-    {
-        "type": "function",
-        "name": "feeAmountTickSpacing",
-        "constant": true,
-        "stateMutability": "view",
-        "payable": false,
-        "inputs": [
-            {
-                "type": "uint24",
-                "name": "fee"
-            }
-        ],
-        "outputs": [
-            {
-                "type": "int24"
-            }
-        ]
-    },
-    {
-        "type": "function",
-        "name": "getPool",
-        "constant": true,
-        "stateMutability": "view",
-        "payable": false,
-        "inputs": [
-            {
-                "type": "address",
-                "name": "tokenA"
-            },
-            {
-                "type": "address",
-                "name": "tokenB"
-            },
-            {
-                "type": "uint24",
-                "name": "fee"
-            }
-        ],
-        "outputs": [
-            {
-                "type": "address",
-                "name": "pool"
-            }
-        ]
-    },
-    {
-        "type": "function",
-        "name": "owner",
+        "name": "feeTo",
         "constant": true,
         "stateMutability": "view",
         "payable": false,
@@ -168,13 +115,59 @@ export const ABI_JSON = [
     },
     {
         "type": "function",
-        "name": "setOwner",
+        "name": "feeToSetter",
+        "constant": true,
+        "stateMutability": "view",
+        "payable": false,
+        "inputs": [],
+        "outputs": [
+            {
+                "type": "address"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "name": "getPair",
+        "constant": true,
+        "stateMutability": "view",
+        "payable": false,
+        "inputs": [
+            {
+                "type": "address"
+            },
+            {
+                "type": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "type": "address"
+            }
+        ]
+    },
+    {
+        "type": "function",
+        "name": "setFeeTo",
         "constant": false,
         "payable": false,
         "inputs": [
             {
                 "type": "address",
-                "name": "_owner"
+                "name": "_feeTo"
+            }
+        ],
+        "outputs": []
+    },
+    {
+        "type": "function",
+        "name": "setFeeToSetter",
+        "constant": false,
+        "payable": false,
+        "inputs": [
+            {
+                "type": "address",
+                "name": "_feeToSetter"
             }
         ],
         "outputs": []
