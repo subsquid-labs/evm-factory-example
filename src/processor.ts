@@ -65,6 +65,10 @@ let db = new Database({
 type Item = BatchProcessorItem<typeof processor>
 type Ctx = BatchHandlerContext<Store<typeof tables>, Item>
 
+let factoryPools: Set<string>
+let usedContracts = new Map<string, number>()
+let unusedContracts = new Map<string, number>()
+
 processor.run(db, async (ctx) => {
     if (!factoryPools) factoryPools = new Set()
 
@@ -77,7 +81,9 @@ processor.run(db, async (ctx) => {
 
             let itemAddr = item.address.toLowerCase()
             if (FACTORY_ADDRESSES.has(itemAddr)) {
-                poolCreationsData.push(handlePoolCreation(ctx, item))
+                let pcd = handlePoolCreation(ctx, item)
+                factoryPools.add(pcd.address)
+                poolCreationsData.push(pcd)
             } else if (factoryPools.has(itemAddr)) {
                 swapsData.push(handleSwap(ctx, block.header, item))
                 registerItem(itemAddr, usedContracts)
@@ -90,22 +96,9 @@ processor.run(db, async (ctx) => {
     keepRecords(usedContracts, `${outPathStats}-used-contracts`)
     keepRecords(unusedContracts, `${outPathStats}-unused-contracts`)
 
-    savePools(ctx, poolCreationsData)
-    saveSwaps(ctx, swapsData)
-})
-
-let factoryPools: Set<string>
-
-function savePools(ctx: Ctx, poolsData: PoolCreationData[]) {
-    for (let p of poolsData) {
-        ctx.store.Pools.write(p)
-        factoryPools.add(p.address)
-    }
-}
-
-function saveSwaps(ctx: Ctx, swapsData: SwapData[]) {
+    ctx.store.Pools.writeMany(poolCreationsData)
     ctx.store.Swaps.writeMany(swapsData)
-}
+})
 
 interface PoolCreationData {
     address: string
@@ -154,9 +147,6 @@ function handleSwap(
         to: event.to.toLowerCase()
     }
 }
-
-let usedContracts = new Map<string, number>()
-let unusedContracts = new Map<string, number>()
 
 function registerItem(address: string, records: Map<string, number>) {
     if(records.has(address)) {
