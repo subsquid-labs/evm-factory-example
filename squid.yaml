@@ -1,14 +1,19 @@
 manifestVersion: subsquid.io/v0.1
-name: factory-example
+name: pancakeswap-swaps
 version: 1
 description: |-
-  Basic example of processing contracts created with factory
+  An example of processing contracts created with factory
 build:
 
 deploy:
-  addons:
-    postgres:
+  secrets:
+    - S3_BUCKET_NAME
+    - S3_ACCESS_KEY_ID
+    - S3_SECRET_ACCESS_KEY
   processor:
+    env:
+      NODE_TLS_REJECT_UNAUTHORIZED:
+        0
     cmd: [ "node", "lib/processor" ]
   api:
-    cmd: [ "npx", "squid-graphql-server", "--dumb-cache", "in-memory", "--dumb-cache-ttl", "1000", "--dumb-cache-size", "100", "--dumb-cache-max-age", "1000" ]
+    cmd: [ "sleep", "3600" ]
