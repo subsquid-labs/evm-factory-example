@@ -28,7 +28,8 @@ const outPathStats = '/mirrorstorage/pancakes-stats'
 
 let processor = new EvmBatchProcessor()
     .setDataSource({
-        archive: lookupArchive('binance'),
+//        archive: lookupArchive('binance'),
+        archive: 'https://binance-v0-15-0.archive.subsquid.io',
     })
     .setBlockRange({
         from: 586_851,
