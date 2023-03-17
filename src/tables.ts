@@ -4,8 +4,10 @@ import {
     Types
 } from '@subsquid/file-store-parquet'
 
+export const poolsFileName = 'pools.parquet'
+
 export const Pools = new Table(
-    'pools.parquet',
+    poolsFileName,
     {
         address: Column(Types.String()),
         token0: Column(Types.String()),
