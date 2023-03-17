@@ -15,6 +15,7 @@ import {lookupArchive} from '@subsquid/archive-registry'
 import {Pools, Swaps} from './tables'
 import * as factoryAbi from './abi/factory'
 import * as pairAbi from './abi/pair'
+import assert from 'assert'
 
 const FACTORY_ADDRESSES = new Set([
 	'0xBCfCcbde45cE874adCB698cC183deBcF17952812'.toLowerCase(),
@@ -51,22 +52,48 @@ let processor = new EvmBatchProcessor()
         } as const,
     })
 
+
 let tables = { Pools, Swaps }
+interface Metadata {
+    height: number
+    pools: string[]
+}
+let factoryPools: Set<string>
 let db = new Database({
     tables: tables,
     dest: new LocalDest('/mirrorstorage/pancakes-data'),
-    chunkSizeMb: 100
+    chunkSizeMb: 100,
+    hooks: {
+        async onConnect(dest) {
+            if (await dest.exists('status.json')) {
+                let {height, pools}: Metadata = await dest.readFile('status.json').then(JSON.parse)
+                assert(Number.isSafeInteger(height))
+                factoryPools = new Set<string>([...pools])
+                return height
+            } else {
+                factoryPools = new Set<string>()
+                return -1
+            }
+        },
+        async onFlush(dest, range) {
+            console.log(factoryPools.size)
+            let metadata: Metadata = {
+                height: range.to,
+                pools: [...factoryPools],
+            }
+            await dest.writeFile('status.json', JSON.stringify(metadata))
+        },
+    },
 })
 
 type Item = BatchProcessorItem<typeof processor>
 type Ctx = BatchHandlerContext<Store<typeof tables>, Item>
 
-let factoryPools: Set<string>
 let usedContracts = new Map<string, number>()
 let unusedContracts = new Map<string, number>()
 
 processor.run(db, async (ctx) => {
-    if (!factoryPools) factoryPools = new Set()
+    assert(factoryPools)
 
     let poolCreationsData: PoolCreationData[] = []
     let swapsData: SwapData[] = []
@@ -103,7 +130,7 @@ function handlePoolCreation(
 ): PoolCreationData {
     let event = factoryAbi.events.PairCreated.decode(item.evmLog)
     return {
-        factory: item.address.toLowerCase()
+        factory: item.address.toLowerCase(),
         address: event.pair.toLowerCase(),
         token0: event.token0.toLowerCase(),
         token1: event.token1.toLowerCase()
