@@ -7,6 +7,7 @@ import {
 export const Pools = new Table(
     'pools.parquet',
     {
+        factory: Column(Types.String()),
         address: Column(Types.String()),
         token0: Column(Types.String()),
         token1: Column(Types.String())
@@ -24,10 +25,10 @@ export const Swaps = new Table(
         timestamp: Column(Types.Timestamp()),
         pool: Column(Types.String()),
         sender: Column(Types.String()),
-        amount0In: Column(Types.Decimal(42)),
-        amount1In: Column(Types.Decimal(42)),
-        amount0Out: Column(Types.Decimal(42)),
-        amount1Out: Column(Types.Decimal(42)),
+        amount0In: Column(Types.String()),
+        amount1In: Column(Types.String()),
+        amount0Out: Column(Types.String()),
+        amount1Out: Column(Types.String()),
         to: Column(Types.String())
     },
     {
