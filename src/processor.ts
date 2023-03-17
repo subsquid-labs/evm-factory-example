@@ -12,7 +12,8 @@ import {
 } from '@subsquid/file-store'
 import {lookupArchive} from '@subsquid/archive-registry'
 
-import {Pools, Swaps} from './tables'
+// import {Pools, Swaps} from './tables'
+import {Table} from '@subsquid/file-store-json'
 import * as factoryAbi from './abi/factory'
 import * as pairAbi from './abi/pair'
 
@@ -33,6 +34,7 @@ let processor = new EvmBatchProcessor()
     })
     .setBlockRange({
         from: 586_851,
+        to: 26_548_500
     })
     .addLog([...FACTORY_ADDRESSES], {
         filter: [[factoryAbi.events.PairCreated.topic]],
@@ -43,7 +45,7 @@ let processor = new EvmBatchProcessor()
             },
         } as const,
     })
-    .addLog([], {
+/*    .addLog([], {
         filter: [[pairAbi.events.Swap.topic]],
         data: {
             evmLog: {
@@ -55,11 +57,14 @@ let processor = new EvmBatchProcessor()
             },
         } as const,
     })
+*/
 
-let tables = { Pools, Swaps }
+// let tables = { Pools, Swaps }
+let tables = { Pools: new Table<{address: string, factory: string}>('transfers.json') }
 let db = new Database({
     tables: tables,
     dest: new LocalDest(outPath),
+    syncIntervalBlocks: 1000,
     chunkSizeMb: 100
 })
 
@@ -71,10 +76,12 @@ let usedContracts = new Map<string, number>()
 let unusedContracts = new Map<string, number>()
 
 processor.run(db, async (ctx) => {
-    if (!factoryPools) factoryPools = new Set()
+//    if (!factoryPools) factoryPools = new Set()
 
-    let poolCreationsData: PoolCreationData[] = []
-    let swapsData: SwapData[] = []
+//    let poolCreationsData: PoolCreationData[] = []
+//    let swapsData: SwapData[] = []
+
+    let poolCreationsData: {address: string, factory: string}[] = []
 
     for (let block of ctx.blocks) {
         for (let item of block.items) {
@@ -83,22 +90,23 @@ processor.run(db, async (ctx) => {
             let itemAddr = item.address.toLowerCase()
             if (FACTORY_ADDRESSES.has(itemAddr)) {
                 let pcd = handlePoolCreation(ctx, item)
-                factoryPools.add(pcd.address)
-                poolCreationsData.push(pcd)
-            } else if (factoryPools.has(itemAddr)) {
+                poolCreationsData.push({address: pcd.address, factory: itemAddr})
+//                factoryPools.add(pcd.address)
+//                poolCreationsData.push(pcd)
+            } /* else if (factoryPools.has(itemAddr)) {
                 swapsData.push(handleSwap(ctx, block.header, item))
                 registerItem(itemAddr, usedContracts)
             } else {
                 registerItem(itemAddr, unusedContracts)
-            }
+            }*/
         }
     }
 
-    keepRecords(usedContracts, `${outPathStats}-used-contracts`)
-    keepRecords(unusedContracts, `${outPathStats}-unused-contracts`)
+//    keepRecords(usedContracts, `${outPathStats}-used-contracts`)
+//    keepRecords(unusedContracts, `${outPathStats}-unused-contracts`)
 
     ctx.store.Pools.writeMany(poolCreationsData)
-    ctx.store.Swaps.writeMany(swapsData)
+//    ctx.store.Swaps.writeMany(swapsData)
 })
 
 interface PoolCreationData {
