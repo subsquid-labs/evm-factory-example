@@ -71,7 +71,7 @@ let db = new Database({
             }
         }
     ),
-    chunkSizeMb: 100,
+    chunkSizeMb: 20,
     hooks: {
         async onConnect(dest) {
             if (await dest.exists('status.json')) {
