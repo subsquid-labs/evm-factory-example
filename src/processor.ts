@@ -4,13 +4,11 @@ import {
     EvmBatchProcessor,
     EvmBlock,
 } from '@subsquid/evm-processor'
-import {LogItem} from '@subsquid/evm-processor/lib/interfaces/dataSelection'
-import {
-    Store,
-    Database,
-    LocalDest
-} from '@subsquid/file-store'
 import {lookupArchive} from '@subsquid/archive-registry'
+import {LogItem} from '@subsquid/evm-processor/lib/interfaces/dataSelection'
+import {Store, Database} from '@subsquid/file-store'
+import {S3Dest} from '@subsquid/file-store-s3'
+import {assertNotNull} from '@subsquid/util-internal'
 
 import {Pools, Swaps} from './tables'
 import * as factoryAbi from './abi/factory'
@@ -61,7 +59,18 @@ interface Metadata {
 let factoryPools: Set<string>
 let db = new Database({
     tables: tables,
-    dest: new LocalDest('/mirrorstorage/pancakes-data'),
+    dest: new S3Dest(
+        'pancakeswaps',
+        assertNotNull(process.env.S3_BUCKET_NAME),
+        {
+            region: 'us-east-1',
+            endpoint: 'https://s3.filebase.com',
+            credentials: {
+                accessKeyId: assertNotNull(process.env.S3_ACCESS_KEY_ID),
+                secretAccessKey: assertNotNull(process.env.S3_SECRET_ACCESS_KEY)
+            }
+        }
+    ),
     chunkSizeMb: 100,
     hooks: {
         async onConnect(dest) {
