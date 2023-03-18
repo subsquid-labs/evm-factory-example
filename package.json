@@ -11,11 +11,9 @@
     "@subsquid/evm-processor": "^0.3.3",
     "@subsquid/evm-typegen": "^2.1.1",
     "@subsquid/file-store-json": "^0.0.1",
-    "@subsquid/file-store-parquet": "^0.3.0",
     "@subsquid/file-store-s3": "^0.2.0",
     "dotenv": "^16.0.3",
-    "ethers": "^5.7.2",
-    "parquetjs": "^0.11.2"
+    "ethers": "^5.7.2"
   },
   "devDependencies": {
     "@subsquid/evm-typegen": "^2.1.1",
