@@ -22,8 +22,7 @@ const FACTORY_ADDRESSES = new Set([
 
 let processor = new EvmBatchProcessor()
     .setDataSource({
-//        archive: lookupArchive('binance'),
-        archive: 'https://binance-v0-15-0.archive.subsquid.io',
+        archive: lookupArchive('binance')
     })
     .setBlockRange({
         from: 586_851,

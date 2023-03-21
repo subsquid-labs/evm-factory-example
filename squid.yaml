@@ -11,9 +11,6 @@ deploy:
     - S3_ACCESS_KEY_ID
     - S3_SECRET_ACCESS_KEY
   processor:
-    env:
-      NODE_TLS_REJECT_UNAUTHORIZED:
-        0
     cmd: [ "node", "lib/processor" ]
   api:
     cmd: [ "sleep", "3600" ]
