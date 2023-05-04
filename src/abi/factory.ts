@@ -2,7 +2,7 @@ import * as ethers from 'ethers'
 import {LogEvent, Func, ContractBase} from './abi.support'
 import {ABI_JSON} from './factory.abi'
 
-export const abi = new ethers.utils.Interface(ABI_JSON);
+export const abi = new ethers.Interface(ABI_JSON);
 
 export const events = {
     FeeAmountEnabled: new LogEvent<([fee: number, tickSpacing: number] & {fee: number, tickSpacing: number})>(
