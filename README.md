@@ -1,14 +1,6 @@
-# Uniswap v3 swaps to BigQuery
+# Pancakeswap Swaps and PairCreated events
 
-This sample squid indexes [Uniswap v3](https://etherscan.io/address/0x1f98431c8ad98523631ae4a59f267346ea31f984) swaps on Ethereum Mainnet. The squid listens to the `PoolCreated`
-events to dynamically update the set of trading pools using the [factory contract](https://docs.subsquid.io/evm-indexing/factory-contracts/) pattern.
-The output is written to Google BigQuery.
-
-One can use this example as a template for scaffolding a new squid project with [`sqd init`](https://docs.subsquid.io/squid-cli/):
-
-```bash
-sqd init my-new-squid --template https://github.com/subsquid-labs/factory-example
-```
+The results are written to `s3://pancakeswap-binance/pancakeswaps` at Filebase.
 
 ## Prerequisites
 
