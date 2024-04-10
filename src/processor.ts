@@ -1,4 +1,3 @@
-import {lookupArchive} from '@subsquid/archive-registry'
 import {
     BlockHeader,
     DataHandlerContext,
@@ -14,11 +13,12 @@ import * as poolAbi from './abi/pool'
 export const FACTORY_ADDRESS = '0x1f98431c8ad98523631ae4a59f267346ea31f984'
 
 export const processor = new EvmBatchProcessor()
-    .setDataSource({
-        archive: lookupArchive('eth-mainnet'),
-        chain: 'https://rpc.ankr.com/eth',
+    .setGateway('https://v2.archive.subsquid.io/network/ethereum-mainnet')
+    .setRpcEndpoint({
+        url: 'https://eth-mainnet.public.blastapi.io',
+        rateLimit: 10
     })
-    .setFinalityConfirmation(10)
+    .setFinalityConfirmation(75)
     .setBlockRange({
         from: 12_369_621,
     })
